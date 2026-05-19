@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
-import { ProcessPaymentDto } from '../dto/process-payment.dto';
-import { WebhookPaymentDto } from '../dto/webhook-payment.dto';
+import { ProcessPaymentDto } from './dto/process-payment.dto';
+import { WebhookPaymentDto } from './dto/webhook-payment.dto';
 
 @Injectable()
 export class PaymentsService {
@@ -36,9 +36,9 @@ export class PaymentsService {
 
   private simulatePaymentProcessing(amount: number): Promise<{ success: boolean; error?: string }> {
     return new Promise((resolve) => {
-      // Simuler un délai de traitement
+      // Simuler un dГ©lai de traitement
       setTimeout(() => {
-        // 95% de succès pour la simulation
+        // 95% de succГЁs pour la simulation
         const isSuccess = Math.random() < 0.95;
         
         if (isSuccess) {
@@ -56,7 +56,7 @@ export class PaymentsService {
   async processPayment(userId: number, orderId: number, processPaymentDto: ProcessPaymentDto) {
     const { paymentMethod, cardNumber, cardExpiry, cardCvc } = processPaymentDto;
 
-    // 1. Vérifier que la commande existe et appartient à l'utilisateur
+    // 1. VГ©rifier que la commande existe et appartient Г  l'utilisateur
     const orderResult = await this.pool.query(
       `SELECT id, order_number, total_amount, status 
        FROM orders 
@@ -78,7 +78,7 @@ export class PaymentsService {
       throw new BadRequestException('Order already paid');
     }
 
-    // 2. Vérifier qu'il n'y a pas déjà un paiement en cours
+    // 2. VГ©rifier qu'il n'y a pas dГ©jГ  un paiement en cours
     const existingPayment = await this.pool.query(
       `SELECT id, status FROM payments 
        WHERE order_id = $1 AND status IN ('pending', 'processing', 'succeeded')
@@ -96,14 +96,14 @@ export class PaymentsService {
 
     if (paymentMethod === 'card' && cardNumber) {
       cardLast4 = cardNumber.slice(-4);
-      // Détection basique du type de carte
+      // DГ©tection basique du type de carte
       if (cardNumber.startsWith('4')) cardBrand = 'visa';
       else if (cardNumber.startsWith('5')) cardBrand = 'mastercard';
       else if (cardNumber.startsWith('3')) cardBrand = 'amex';
       else cardBrand = 'unknown';
     }
 
-    // 4. Créer l'enregistrement de paiement
+    // 4. CrГ©er l'enregistrement de paiement
     const transactionId = this.generateTransactionId();
     const amount = parseFloat(order.total_amount);
 
@@ -123,7 +123,7 @@ export class PaymentsService {
     const paymentResult_sim = await this.simulatePaymentProcessing(amount);
 
     if (paymentResult_sim.success) {
-      // Paiement réussi
+      // Paiement rГ©ussi
       await this.pool.query(
         `UPDATE payments 
          SET status = 'succeeded', paid_at = NOW(), updated_at = NOW()
@@ -131,7 +131,7 @@ export class PaymentsService {
         [payment.id]
       );
 
-      // Mettre à jour le statut de la commande
+      // Mettre Г  jour le statut de la commande
       await this.pool.query(
         `UPDATE orders 
          SET status = 'paid', paid_at = NOW(), updated_at = NOW()
@@ -155,7 +155,7 @@ export class PaymentsService {
         message: 'Payment successful',
       };
     } else {
-      // Paiement échoué
+      // Paiement Г©chouГ©
       await this.pool.query(
         `UPDATE payments 
          SET status = 'failed', error_message = $1, updated_at = NOW()

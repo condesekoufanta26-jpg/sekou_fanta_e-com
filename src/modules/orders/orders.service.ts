@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool } from 'pg';
-import { CreateOrderDto } from '../dto/create-order.dto';
-import { UpdateOrderStatusDto } from '../dto/update-order-status.dto';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 @Injectable()
 export class OrdersService {
@@ -26,7 +26,7 @@ export class OrdersService {
   async createOrder(userId: number, createOrderDto: CreateOrderDto) {
     const { shippingAddress, paymentMethod } = createOrderDto;
 
-    // 1. Récupérer le panier de l'utilisateur
+    // 1. RГ©cupГ©rer le panier de l'utilisateur
     const cartResult = await this.pool.query(
       `SELECT c.id as cart_id, 
               ci.product_id, ci.quantity, ci.price_at_add, 
@@ -42,7 +42,7 @@ export class OrdersService {
       throw new BadRequestException('Cart is empty');
     }
 
-    // 2. Vérifier les stocks
+    // 2. VГ©rifier les stocks
     for (const item of cartResult.rows) {
       if (item.stock < item.quantity) {
         throw new BadRequestException(`Insufficient stock for product: ${item.product_name}`);
@@ -55,10 +55,10 @@ export class OrdersService {
       0
     );
 
-    // 4. Générer le numéro de commande
+    // 4. GГ©nГ©rer le numГ©ro de commande
     const orderNumber = this.generateOrderNumber();
 
-    // 5. Créer la commande
+    // 5. CrГ©er la commande
     const orderResult = await this.pool.query(
       `INSERT INTO orders (user_id, order_number, total_amount, shipping_address, payment_method, status)
        VALUES ($1, $2, $3, $4, $5, 'pending')
@@ -68,7 +68,7 @@ export class OrdersService {
 
     const order = orderResult.rows[0];
 
-    // 6. Créer les order_items et mettre à jour les stocks
+    // 6. CrГ©er les order_items et mettre Г  jour les stocks
     for (const item of cartResult.rows) {
       await this.pool.query(
         `INSERT INTO order_items (order_id, product_id, product_name, quantity, unit_price, total_price)
@@ -76,7 +76,7 @@ export class OrdersService {
         [order.id, item.product_id, item.product_name, item.quantity, item.price_at_add, item.quantity * parseFloat(item.price_at_add)]
       );
 
-      // Mettre à jour le stock
+      // Mettre Г  jour le stock
       await this.pool.query(
         `UPDATE products SET stock = stock - $1, updated_at = NOW()
          WHERE id = $2`,
