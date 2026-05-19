@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request, ParseIntPipe } from '@nestjs/common';
+﻿import { Controller, Get, Post, Body, Param, UseGuards, Request, ParseIntPipe } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
-import { ProcessPaymentDto } from '../dto/process-payment.dto';
-import { WebhookPaymentDto } from '../dto/webhook-payment.dto';
-import { JwtAuthGuard } from '../guards/jwt-auth';
-import { RolesGuard } from '../guards/roles';
+import { ProcessPaymentDto } from './dto/process-payment.dto';
+import { WebhookPaymentDto } from './dto/webhook-payment.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('payments')

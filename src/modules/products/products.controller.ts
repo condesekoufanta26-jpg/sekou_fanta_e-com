@@ -1,12 +1,12 @@
-import { 
+﻿import { 
   Controller, Get, Post, Body, Patch, Delete, Param, 
   UseGuards, Request, ParseIntPipe, BadRequestException
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
-import { CreateProductDto } from '../dto/create-product.dto';
-import { UpdateProductDto } from '../dto/update-product.dto';
-import { JwtAuthGuard } from '../guards/jwt-auth';
-import { RolesGuard } from '../guards/roles';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('products')
