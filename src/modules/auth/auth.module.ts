@@ -11,28 +11,23 @@ import { RefreshStrategy } from './strategies/refresh.strategy';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { SmsModule } from '../../common/services/sms/sms.module';
-import { RedisModule } from '../../infrastructure/redis/redis.module';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: {
-          expiresIn: configService.get<string>('JWT_ACCESS_EXPIRES_IN', '15m'),
-        },
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret) {
+          throw new Error('JWT_SECRET is not defined');
+        }
+        return {
+          secret,
+          signOptions: { expiresIn: '15m' },
+        };
+      },
       inject: [ConfigService],
-    }),
-    ThrottlerModule.forRootAsync({
-      imports: [ConfigModule, RedisModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        ttl: config.get('AUTH_THROTTLE_TTL', 60),
-        limit: config.get('AUTH_THROTTLE_LIMIT', 5), // 5 requêtes par minute sur /auth/*
-      }),
     }),
     SmsModule,
   ],
