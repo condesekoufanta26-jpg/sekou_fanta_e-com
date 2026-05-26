@@ -1,19 +1,37 @@
+// src/common/middleware/correlation-id.middleware.ts
 import { Injectable, NestMiddleware } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
+import { AsyncLocalStorage } from 'async_hooks';
+
+/**
+ * ✅ Traçabilité: Génère UUID v4 par requête
+ * ✅ 152-ФЗ: Stockage en contexte async pour logs
+ */
+export const als = new AsyncLocalStorage<Map<string, any>>();
 
 @Injectable()
 export class CorrelationIdMiddleware implements NestMiddleware {
-  use(req: Request, res: Response, next: NextFunction) {
-    // Récupérer ou générer le correlation ID
-    const correlationId = req.headers['x-correlation-id'] as string || uuidv4();
+  use(req: FastifyRequest, res: FastifyReply, next: () => void) {
+    // Génère ou récupère le correlation ID
+    const correlationId = (req.headers['x-correlation-id'] as string) || uuidv4();
     
-    // Injecter dans les headers de réponse
-    res.setHeader('X-Correlation-Id', correlationId);
+    // Injecte dans la réponse
+    res.header('X-Correlation-Id', correlationId);
     
-    // Stocker dans la requête pour utilisation ultérieure
-    req['correlationId'] = correlationId;
+    // Stocke dans le contexte async pour propagation
+    const store = new Map<string, any>();
+    store.set('correlationId', correlationId);
+    store.set('startTime', Date.now());
     
-    next();
+    als.run(store, () => {
+      (req as any).correlationId = correlationId;
+      next();
+    });
   }
+}
+
+// Utilitaire pour récupérer le correlation ID partout
+export function getCorrelationId(): string | undefined {
+  return als.getStore()?.get('correlationId');
 }

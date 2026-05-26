@@ -1,7 +1,9 @@
-﻿import { 
-  Controller, Get, Post, Body, Patch, Delete, Param, 
-  UseGuards, Request, ParseIntPipe, BadRequestException
+﻿// src/modules/products/products.controller.ts
+import { 
+  Controller, Get, Post, Body, Patch, Param, Delete, 
+  UseGuards, Request, ParseIntPipe, UseInterceptors 
 } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -21,41 +23,33 @@ export class ProductsController {
   }
 
   @Get()
-  findAll() {
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300000)
+  async findAll() {
     return this.productsService.findAll();
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-        const productId = parseInt(id, 10);
-    if (isNaN(productId)) {
-      throw new BadRequestException(`Invalid product ID: "${id}" is not a number`);
-    }
-    return this.productsService.findOne(productId);
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300000)
+  async findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  update(
-    @Param('id') id: string,
+  async update(
+    @Param('id', ParseIntPipe) id: number,
     @Body() updateProductDto: UpdateProductDto,
   ) {
-    const productId = parseInt(id, 10);
-    if (isNaN(productId)) {
-      throw new BadRequestException(`Invalid product ID: "${id}" is not a number`);
-    }
-    return this.productsService.update(productId, updateProductDto);
+    return this.productsService.update(id, updateProductDto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  remove(@Param('id') id: string) {
-    const productId = parseInt(id, 10);
-    if (isNaN(productId)) {
-      throw new BadRequestException(`Invalid product ID: "${id}" is not a number`);
-    }
-    return this.productsService.remove(productId);
+  async remove(@Param('id', ParseIntPipe) id: number) {
+    return this.productsService.remove(id);
   }
 }
