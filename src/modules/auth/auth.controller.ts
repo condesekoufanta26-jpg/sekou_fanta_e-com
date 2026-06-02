@@ -1,7 +1,9 @@
-﻿// src/modules/auth/auth.controller.ts
-import { Controller, Post, Body, UseGuards, Get, Request, Patch, Param, ParseIntPipe } from '@nestjs/common';
+﻿import {
+  Controller, Post, Body, UseGuards, Get,
+  Request, Patch, Param, ParseIntPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -19,6 +21,8 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Public()
+  // ✅ Sécurité : 5 req/min en production (désactivable via .env.benchmark)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiResponse({ status: 201, description: 'User successfully registered' })
@@ -28,7 +32,8 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ default: { ttl: 60000, limit: 5 } }) // 5 attempts per minute
+  // ✅ Sécurité OWASP API4:2023 : protection brute-force
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('login')
   @ApiOperation({ summary: 'Login user' })
   @ApiResponse({ status: 200, description: 'Login successful' })
@@ -38,6 +43,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('refresh')
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
@@ -56,6 +62,8 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
+  // ✅ Skip throttle — endpoint de profil, pas sensible au brute-force
+  @SkipThrottle()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
   @ApiResponse({ status: 200, description: 'User profile retrieved' })
@@ -64,6 +72,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('forgot-password')
   @ApiOperation({ summary: 'Request password reset' })
   @ApiResponse({ status: 200, description: 'Reset code sent if email exists' })
@@ -72,6 +81,7 @@ export class AuthController {
   }
 
   @Public()
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @Post('reset-password/:code')
   @ApiOperation({ summary: 'Reset password with code' })
   @ApiResponse({ status: 200, description: 'Password reset successful' })
@@ -82,10 +92,10 @@ export class AuthController {
     return this.authService.resetPassword(code, resetPasswordDto);
   }
 
-  // Admin endpoints
   @Patch('set-admin/:id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @SkipThrottle()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Set user as admin (admin only)' })
   @ApiResponse({ status: 200, description: 'User role updated' })
@@ -100,6 +110,7 @@ export class AuthController {
   @Get('admins')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
+  @SkipThrottle()
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get all admins (admin only)' })
   getAdmins() {

@@ -1,19 +1,24 @@
-﻿import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+﻿// src/common/middleware/logger.middleware.ts
+import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
+import { FastifyRequest, FastifyReply } from 'fastify';
 import { v4 as uuidv4 } from 'uuid';
+import { getCorrelationId } from './correlation-id.middleware';
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
   private readonly logger = new Logger('HTTP');
 
-  use(req: Request, res: Response, next: NextFunction) {
+  use(req: FastifyRequest, res: FastifyReply, next: () => void) {
     const correlationId = (req.headers['x-correlation-id'] as string) || uuidv4();
-    req['correlationId'] = correlationId;
-    res.setHeader('X-Correlation-Id', correlationId);
+    (req as any).correlationId = correlationId;
+    
+    // ✅ Fastify utilise header() au lieu de setHeader()
+    res.header('X-Correlation-Id', correlationId);
 
     const startTime = Date.now();
 
-    res.on('finish', () => {
+    // ✅ Fastify utilise res.raw.on('finish')
+    res.raw.on('finish', () => {
       const duration = Date.now() - startTime;
       this.logger.log({
         timestamp: new Date().toISOString(),
