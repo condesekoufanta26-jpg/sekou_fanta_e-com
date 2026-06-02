@@ -1,14 +1,16 @@
-﻿import { Injectable, NestMiddleware } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+﻿// src/common/middleware/security-headers.middleware.ts
+import { Injectable, NestMiddleware } from '@nestjs/common';
+import { FastifyRequest, FastifyReply } from 'fastify';
 
 @Injectable()
 export class SecurityHeadersMiddleware implements NestMiddleware {
-  use(req: Request, res: Response, next: NextFunction) {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  use(req: FastifyRequest, res: FastifyReply, next: () => void) {
+    // ✅ Fastify utilise header() au lieu de setHeader()
+    res.header('X-Content-Type-Options', 'nosniff');
+    res.header('X-Frame-Options', 'SAMEORIGIN');
+    res.header('X-XSS-Protection', '1; mode=block');
+    res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
     next();
   }
 }
