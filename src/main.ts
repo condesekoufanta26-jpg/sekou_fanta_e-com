@@ -45,9 +45,14 @@ async function bootstrap() {
     threshold: 1024,
   });
 
-  await app.register(fastifyCookie, {
-    secret: configService.get<string>('COOKIE_SECRET') || 'default-secret-key',
-  });
+    const cookieSecret = configService.get<string>('COOKIE_SECRET');
+   if (!cookieSecret) {
+     throw new Error('COOKIE_SECRET is not defined in environment variables');
+   }
+
+   await app.register(fastifyCookie, {
+     secret: cookieSecret,
+   });
 
   app.enableCors({
     origin: configService.get('CORS_ORIGINS', 'http://localhost:3000')?.split(','),
@@ -99,7 +104,7 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
 
-  const port = configService.get<number>('PORT', 3000);
+    const port = configService.get<number>('PORT', 3000);
   const host = configService.get<string>('HOST', '0.0.0.0');
 
   await app.listen(port, host);
